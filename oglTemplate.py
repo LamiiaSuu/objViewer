@@ -117,6 +117,12 @@ class Scene:
         self.animate            = False
         self.shading_mode       = 0
         self.use_perspective    = True
+        self.rot_x              = 0
+        self.rot_y              = 0
+        self.rot_z              = 0
+        self.zoom               = 2.0
+        self.tx                 = 0.0
+        self.ty                 = 0.0
 
 
     def init_GL(self):
@@ -286,8 +292,21 @@ class Scene:
                 1.0,
                 5.0
             )
-        view       = look_at(0,0,2, 0,0,0, 0,1,0)
-        model      = rotate_y(self.angle)
+        view = look_at(
+            0,0,self.zoom,
+            0,0,0,
+            0,1,0
+        )
+        model = (
+            translate(
+                self.tx,
+                self.ty,
+                0
+            )
+            @ rotate_x(self.rot_x)
+            @ rotate_y(self.rot_y + self.angle)
+            @ rotate_z(self.rot_z)
+        )
         mvp_matrix = projection @ view @ model
 
         # enable shader & set uniforms
@@ -429,14 +448,11 @@ class RenderWindow:
                 print("Shading:",
                     self.scene.shading_mode)
             if key == glfw.KEY_X:
-                # TODO:
-                print("rotate: around x-axis")
+                self.scene.rot_x += 10
             if key == glfw.KEY_Y:
-                # TODO:
-                print("rotate: around y-axis")
+                self.scene.rot_y += 10
             if key == glfw.KEY_Z:
-                # TODO:
-                print("rotate: around z-axis")
+                self.scene.rot_z += 10
 
 
     def on_size(self, win, width, height):
