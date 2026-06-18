@@ -130,6 +130,31 @@ class Scene:
         frag_prog           = compileShader(fragment_shader, GL_FRAGMENT_SHADER)
         self.shader_program = compileProgram(vertex_prog, frag_prog)
 
+        vertex_shader = open(
+            "shader_phong.vert",
+            "r"
+        ).read()
+
+        fragment_shader = open(
+            "shader_phong.frag",
+            "r"
+        ).read()
+
+        vertex_prog = compileShader(
+            vertex_shader,
+            GL_VERTEX_SHADER
+        )
+
+        frag_prog = compileShader(
+            fragment_shader,
+            GL_FRAGMENT_SHADER
+        )
+
+        self.phong_program = compileProgram(
+            vertex_prog,
+            frag_prog
+        )
+
         # unbind vertex array to bind it again in method draw
         glBindVertexArray(0)
 
@@ -229,10 +254,18 @@ class Scene:
                 GL_FILL
             )
         
-        glUseProgram(self.shader_program)
+        if self.shading_mode == 2:
+            program = self.phong_program
+        else:
+            program = self.shader_program
+
+        glUseProgram(program)
         
         # determine location of uniform variable varName
-        varLocation = glGetUniformLocation(self.shader_program, 'modelview_projection_matrix')
+        varLocation = glGetUniformLocation(
+            program,
+            'modelview_projection_matrix'
+        )
         # pass value to shader
         glUniformMatrix4fv(varLocation, 1, GL_TRUE, mvp_matrix)
 
