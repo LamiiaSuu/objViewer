@@ -155,6 +155,31 @@ class Scene:
             frag_prog
         )
 
+        vertex_shader = open(
+            "shader_wire.vert",
+            "r"
+        ).read()
+
+        fragment_shader = open(
+            "shader_wire.frag",
+            "r"
+        ).read()
+
+        vertex_prog = compileShader(
+            vertex_shader,
+            GL_VERTEX_SHADER
+        )
+
+        frag_prog = compileShader(
+            fragment_shader,
+            GL_FRAGMENT_SHADER
+        )
+
+        self.wire_program = compileProgram(
+            vertex_prog,
+            frag_prog
+        )
+
         # unbind vertex array to bind it again in method draw
         glBindVertexArray(0)
 
@@ -254,7 +279,9 @@ class Scene:
                 GL_FILL
             )
         
-        if self.shading_mode == 2:
+        if self.shading_mode == 0:
+            program = self.wire_program
+        elif self.shading_mode == 2:
             program = self.phong_program
         else:
             program = self.shader_program
