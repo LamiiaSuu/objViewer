@@ -26,6 +26,7 @@
 
 import glfw
 import numpy as np
+import sys
 
 from OpenGL.GL import *
 from OpenGL.arrays.vbo import VBO
@@ -65,7 +66,43 @@ class Scene:
         # unbind vertex array to bind it again in method draw
         glBindVertexArray(0)
 
- 
+    def load_obj(filename):
+        vertices = []
+        indices = []
+
+        with open(filename, "r") as file:
+            for line in file:
+                parts = line.strip().split()
+
+                if not parts:
+                    continue
+
+                if parts[0] == "v":
+                    vertices.append([
+                        float(parts[1]),
+                        float(parts[2]),
+                        float(parts[3])
+                    ])
+
+                elif parts[0] == "f":
+                    face = []
+
+                    for v in parts[1:]:
+                        face.append(int(v.split('/')[0]) - 1)
+
+                    indices.extend(face)
+
+        vertices = np.array(vertices, dtype=np.float32)
+        indices = np.array(indices, dtype=np.uint32)
+
+        center = np.mean(vertices, axis=0)
+        vertices -= center
+
+        max_dist = np.max(np.linalg.norm(vertices, axis=1))
+        vertices /= max_dist
+
+        return vertices, indices
+
     def gen_buffers(self):
         # TODO: 
         # 1. Load geometry from file and calc normals if not available
