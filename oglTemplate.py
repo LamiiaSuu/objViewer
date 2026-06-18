@@ -73,6 +73,36 @@ def load_obj(filename):
     vertices /= max_dist
 
     return vertices, indices
+
+def calculate_normals(vertices, indices):
+    normals = np.zeros(vertices.shape, dtype=np.float32)
+
+    for i in range(0, len(indices), 3):
+        i1 = indices[i]
+        i2 = indices[i + 1]
+        i3 = indices[i + 2]
+
+        v1 = vertices[i1]
+        v2 = vertices[i2]
+        v3 = vertices[i3]
+
+        normal = np.cross(v2 - v1, v3 - v1)
+
+        length = np.linalg.norm(normal)
+        if length > 0:
+            normal /= length
+
+        normals[i1] += normal
+        normals[i2] += normal
+        normals[i3] += normal
+
+    for i in range(len(normals)):
+        length = np.linalg.norm(normals[i])
+        if length > 0:
+            normals[i] /= length
+
+    return normals
+
 class Scene:
     """
         OpenGL scene class that render a RGB colored tetrahedron.
@@ -114,22 +144,36 @@ class Scene:
 
         # generate and fill buffer with vertex positions (attribute 0)
         positions, self.indices = load_obj(sys.argv[1])
+        normals = calculate_normals(
+            positions,
+            self.indices
+        )
         pos_buffer = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, pos_buffer)
         glBufferData(GL_ARRAY_BUFFER, positions.nbytes, positions, GL_STATIC_DRAW)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, None)
         glEnableVertexAttribArray(0)
- 
-        # generate and fill buffer with vertex colors (attribute 1)
-        colors = np.array([ 1.0, 0.0, 0.0, # 0. color
-                            0.0, 1.0, 0.0, # 1. color
-                            0.0, 0.0, 1.0, # 2. color
-                            1.0, 1.0, 1.0  # 3. color
-                            ], dtype=np.float32)
-        col_buffer = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, col_buffer)
-        glBufferData(GL_ARRAY_BUFFER, colors.nbytes, colors, GL_STATIC_DRAW)
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, None)
+
+        normal_buffer = glGenBuffers(1)
+
+        glBindBuffer(GL_ARRAY_BUFFER, normal_buffer)
+
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            normals.nbytes,
+            normals,
+            GL_STATIC_DRAW
+        )
+
+        glVertexAttribPointer(
+            1,
+            3,
+            GL_FLOAT,
+            GL_FALSE,
+            0,
+            None
+        )
+
         glEnableVertexAttribArray(1)
 
         # generate index buffer (for triangle strip)      
