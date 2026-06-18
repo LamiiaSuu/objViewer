@@ -226,7 +226,7 @@ class Scene:
 
         # enable vertex array & draw triangle(s)
         glBindVertexArray(self.vertex_array)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+        # glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
         glDrawElements(
             GL_TRIANGLES,
