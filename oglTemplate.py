@@ -132,6 +132,15 @@ def project_on_sphere(
         z / length
     ])
 
+def shadow_matrix():
+    return np.array([
+        [1, 0, 0, 0],
+        [0, 0, 0, -0.9],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]
+    ], dtype=np.float32)
+
+
 class Scene:
     """
         OpenGL scene class that render a RGB colored tetrahedron.
@@ -153,6 +162,7 @@ class Scene:
         self.tx                 = 0.0
         self.ty                 = 0.0
         self.arcball_rotation   = np.eye(4)
+        self.shadow_enabled     = True
 
 
     def init_GL(self):
@@ -213,6 +223,31 @@ class Scene:
         )
 
         self.wire_program = compileProgram(
+            vertex_prog,
+            frag_prog
+        )
+
+        vertex_shader = open(
+            "shader_shadow.vert",
+            "r"
+        ).read()
+
+        fragment_shader = open(
+            "shader_shadow.frag",
+            "r"
+        ).read()
+
+        vertex_prog = compileShader(
+            vertex_shader,
+            GL_VERTEX_SHADER
+        )
+
+        frag_prog = compileShader(
+            fragment_shader,
+            GL_FRAGMENT_SHADER
+        )
+
+        self.shadow_program = compileProgram(
             vertex_prog,
             frag_prog
         )
@@ -359,6 +394,58 @@ class Scene:
         else:
             program = self.shader_program
 
+        glEnable(GL_BLEND)
+        glBlendFunc(
+            GL_SRC_ALPHA,
+            GL_ONE_MINUS_SRC_ALPHA
+        )
+        if self.shadow_enabled:
+
+            shadow_model = (
+                translate(
+                    self.tx,
+                    self.ty,
+                    0
+                )
+                @ shadow_matrix()
+                @ self.arcball_rotation
+                @ rotate_x(self.rot_x)
+                @ rotate_y(self.rot_y + self.angle)
+                @ rotate_z(self.rot_z)
+            )
+
+            shadow_mvp = (
+                projection
+                @ view
+                @ shadow_model
+            )
+
+            glUseProgram(
+                self.shadow_program
+            )
+
+            loc = glGetUniformLocation(
+                self.shadow_program,
+                "modelview_projection_matrix"
+            )
+
+            glUniformMatrix4fv(
+                loc,
+                1,
+                GL_TRUE,
+                shadow_mvp
+            )
+
+            glBindVertexArray(
+                self.vertex_array
+            )
+
+            glDrawElements(
+                GL_TRIANGLES,
+                len(self.indices),
+                GL_UNSIGNED_INT,
+                None
+            )
         glUseProgram(program)
         
         # determine location of uniform variable varName
@@ -452,8 +539,8 @@ class RenderWindow:
         # print('GLSL Vers.   : %s' % glGetString(GL_SHADING_LANGUAGE_VERSION))
         # print('Renderer     : %s' % glGetString(GL_RENDERER))
 
-        # set background color to black
-        glClearColor(0, 0, 0, 0)     
+        # set background color to gray
+        glClearColor(0.1, 0.1, 0.1, 1.0) 
 
         # Enable depthtest
         glEnable(GL_DEPTH_TEST)
