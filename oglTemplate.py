@@ -218,6 +218,17 @@ class Scene:
         mvp_matrix = projection @ view @ model
 
         # enable shader & set uniforms
+        if self.shading_mode == 0:
+            glPolygonMode(
+                GL_FRONT_AND_BACK,
+                GL_LINE
+            )
+        else:
+            glPolygonMode(
+                GL_FRONT_AND_BACK,
+                GL_FILL
+            )
+        
         glUseProgram(self.shader_program)
         
         # determine location of uniform variable varName
@@ -321,8 +332,12 @@ class RenderWindow:
                 # TODO:
                 print("toggle projection: orthographic / perspective ")
             if key == glfw.KEY_S:
-                # TODO:
-                print("toggle shading: wireframe, grouraud, phong")
+                self.scene.shading_mode = (
+                    self.scene.shading_mode + 1
+                ) % 3
+
+                print("Shading:",
+                    self.scene.shading_mode)
             if key == glfw.KEY_X:
                 # TODO:
                 print("rotate: around x-axis")
