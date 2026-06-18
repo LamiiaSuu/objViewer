@@ -182,7 +182,14 @@ class Scene:
 
         # enable vertex array & draw triangle(s)
         glBindVertexArray(self.vertex_array)
-        glDrawElements(GL_TRIANGLE_STRIP, self.indices.nbytes//4, GL_UNSIGNED_INT, None)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+
+        glDrawElements(
+            GL_TRIANGLES,
+            len(self.indices),
+            GL_UNSIGNED_INT,
+            None
+        )
 
         # unbind the shader and vertex array state
         glUseProgram(0)
