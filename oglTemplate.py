@@ -115,6 +115,7 @@ class Scene:
         self.angle              = 0
         self.angle_increment    = 1
         self.animate            = False
+        self.shading_mode       = 0
 
 
     def init_GL(self):
