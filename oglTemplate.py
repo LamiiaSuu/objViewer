@@ -37,6 +37,42 @@ from mat4 import *
 EXIT_FAILURE = -1
 
 
+def load_obj(filename):
+    vertices = []
+    indices = []
+
+    with open(filename, "r") as file:
+        for line in file:
+            parts = line.strip().split()
+
+            if not parts:
+                continue
+
+            if parts[0] == "v":
+                vertices.append([
+                    float(parts[1]),
+                    float(parts[2]),
+                    float(parts[3])
+                ])
+
+            elif parts[0] == "f":
+                face = []
+
+                for v in parts[1:]:
+                    face.append(int(v.split('/')[0]) - 1)
+
+                indices.extend(face)
+
+    vertices = np.array(vertices, dtype=np.float32)
+    indices = np.array(indices, dtype=np.uint32)
+
+    center = np.mean(vertices, axis=0)
+    vertices -= center
+
+    max_dist = np.max(np.linalg.norm(vertices, axis=1))
+    vertices /= max_dist
+
+    return vertices, indices
 class Scene:
     """
         OpenGL scene class that render a RGB colored tetrahedron.
@@ -66,42 +102,6 @@ class Scene:
         # unbind vertex array to bind it again in method draw
         glBindVertexArray(0)
 
-    def load_obj(filename):
-        vertices = []
-        indices = []
-
-        with open(filename, "r") as file:
-            for line in file:
-                parts = line.strip().split()
-
-                if not parts:
-                    continue
-
-                if parts[0] == "v":
-                    vertices.append([
-                        float(parts[1]),
-                        float(parts[2]),
-                        float(parts[3])
-                    ])
-
-                elif parts[0] == "f":
-                    face = []
-
-                    for v in parts[1:]:
-                        face.append(int(v.split('/')[0]) - 1)
-
-                    indices.extend(face)
-
-        vertices = np.array(vertices, dtype=np.float32)
-        indices = np.array(indices, dtype=np.uint32)
-
-        center = np.mean(vertices, axis=0)
-        vertices -= center
-
-        max_dist = np.max(np.linalg.norm(vertices, axis=1))
-        vertices /= max_dist
-
-        return vertices, indices
 
     def gen_buffers(self):
         # TODO: 
@@ -113,11 +113,7 @@ class Scene:
         glBindVertexArray(self.vertex_array)
 
         # generate and fill buffer with vertex positions (attribute 0)
-        positions = np.array([  0.0,  0.58,  0.0, # 0. vertex
-                               -0.5, -0.29,  0.0, # 1. vertex
-                                0.5, -0.29,  0.0, # 2. vertex
-                                0.0,  0.00, -0.58 # 3. vertex
-                                ], dtype=np.float32)
+        positions, self.indices = load_obj(sys.argv[1])
         pos_buffer = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, pos_buffer)
         glBufferData(GL_ARRAY_BUFFER, positions.nbytes, positions, GL_STATIC_DRAW)
@@ -136,8 +132,7 @@ class Scene:
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, None)
         glEnableVertexAttribArray(1)
 
-        # generate index buffer (for triangle strip)
-        self.indices = np.array([0, 1, 2, 3, 0, 1], dtype=np.int32)        
+        # generate index buffer (for triangle strip)      
         ind_buffer_object = glGenBuffers(1)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ind_buffer_object)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.indices.nbytes, self.indices, GL_STATIC_DRAW)
