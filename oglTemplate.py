@@ -103,6 +103,35 @@ def calculate_normals(vertices, indices):
 
     return normals
 
+def project_on_sphere(
+        x,
+        y,
+        width,
+        height,
+        radius=200):
+
+    x = x - width / 2.0
+    y = height / 2.0 - y
+
+    a = min(
+        radius * radius,
+        x * x + y * y
+    )
+
+    z = np.sqrt(
+        radius * radius - a
+    )
+
+    length = np.sqrt(
+        x*x + y*y + z*z
+    )
+
+    return np.array([
+        x / length,
+        y / length,
+        z / length
+    ])
+
 class Scene:
     """
         OpenGL scene class that render a RGB colored tetrahedron.
@@ -123,6 +152,7 @@ class Scene:
         self.zoom               = 2.0
         self.tx                 = 0.0
         self.ty                 = 0.0
+        self.arcball_rotation   = np.eye(4)
 
 
     def init_GL(self):
@@ -303,6 +333,7 @@ class Scene:
                 self.ty,
                 0
             )
+            @ self.arcball_rotation
             @ rotate_x(self.rot_x)
             @ rotate_y(self.rot_y + self.angle)
             @ rotate_z(self.rot_z)
@@ -387,6 +418,10 @@ class RenderWindow:
 
         # set window callbacks
         glfw.set_mouse_button_callback(self.window, self.on_mouse_button)
+        glfw.set_cursor_pos_callback(
+            self.window,
+            self.on_mouse_move
+        )
         glfw.set_key_callback(self.window, self.on_keyboard)
         glfw.set_window_size_callback(self.window, self.on_size)
 
@@ -400,6 +435,14 @@ class RenderWindow:
 
         # exit flag
         self.exitNow = False
+
+        self.last_x = 0
+        self.last_y = 0
+
+        self.left_pressed = False
+        self.middle_pressed = False
+        self.right_pressed = False
+        self.arcball_start = None
 
 
     def init_GL(self):
@@ -416,11 +459,117 @@ class RenderWindow:
         glEnable(GL_DEPTH_TEST)
 
 
-    def on_mouse_button(self, win, button, action, mods):
-        print("mouse button: ", win, button, action, mods)
-        # TODO: realize arcball metaphor for rotations as well as
-        #       scaling and translation paralell to the image plane,
-        #       with the mouse. 
+    def on_mouse_button(
+            self,
+            win,
+            button,
+            action,
+            mods):
+
+        if button == glfw.MOUSE_BUTTON_LEFT:
+
+            self.left_pressed = (
+                action == glfw.PRESS
+            )
+
+            if action == glfw.PRESS:
+
+                x, y = glfw.get_cursor_pos(win)
+
+                self.arcball_start = (
+                    project_on_sphere(
+                        x,
+                        y,
+                        self.scene.width,
+                        self.scene.height
+                    )
+                )
+
+        if button == glfw.MOUSE_BUTTON_MIDDLE:
+            self.middle_pressed = (
+                action == glfw.PRESS
+            )
+
+        if button == glfw.MOUSE_BUTTON_RIGHT:
+            self.right_pressed = (
+                action == glfw.PRESS
+            )
+
+        self.last_x, self.last_y = (
+            glfw.get_cursor_pos(win)
+        )
+
+    def on_mouse_move(
+            self,
+            win,
+            xpos,
+            ypos):
+
+        dx = xpos - self.last_x
+        dy = ypos - self.last_y
+
+        self.last_x = xpos
+        self.last_y = ypos
+
+        if self.middle_pressed:
+
+            self.scene.zoom += dy * 0.01
+
+            self.scene.zoom = max(
+                0.5,
+                self.scene.zoom
+            )
+
+        if self.right_pressed:
+
+            self.scene.tx += dx * 0.005
+            self.scene.ty -= dy * 0.005
+        if self.left_pressed:
+
+            current = project_on_sphere(
+                xpos,
+                ypos,
+                self.scene.width,
+                self.scene.height
+            )
+
+            start = self.arcball_start
+
+            axis = np.cross(
+                start,
+                current
+            )
+
+            axis_length = np.linalg.norm(axis)
+
+            if axis_length > 1e-6:
+
+                axis /= axis_length
+
+                angle = np.degrees(
+                    np.arccos(
+                        np.clip(
+                            np.dot(
+                                start,
+                                current
+                            ),
+                            -1.0,
+                            1.0
+                        )
+                    )
+                )
+
+                rotation = rotate(
+                    angle,
+                    axis
+                )
+
+                self.scene.arcball_rotation = (
+                    rotation
+                    @ self.scene.arcball_rotation
+                )
+
+            self.arcball_start = current
 
     def on_keyboard(self, win, key, scancode, action, mods):
         print("keyboard: ", win, key, scancode, action, mods)
