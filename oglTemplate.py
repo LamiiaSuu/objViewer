@@ -108,7 +108,7 @@ def project_on_sphere(
         y,
         width,
         height,
-        radius=200):
+        radius=400):
 
     x = x - width / 2.0
     y = height / 2.0 - y
@@ -540,7 +540,7 @@ class RenderWindow:
         # print('Renderer     : %s' % glGetString(GL_RENDERER))
 
         # set background color to gray
-        glClearColor(0.1, 0.1, 0.1, 1.0) 
+        glClearColor(0.25, 0.25, 0.25, 1.0) 
 
         # Enable depthtest
         glEnable(GL_DEPTH_TEST)
